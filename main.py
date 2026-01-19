@@ -1,38 +1,49 @@
 import os
 import requests
-from google import genai # New import
+from google import genai
+from tenacity import retry, stop_after_attempt, wait_exponential
 
-def run_task():
-    # 1. Fetch the Quote
-    resp = requests.get("https://zenquotes.io/api/random")
-    quote_data = resp.json()[0]
-    original_quote = quote_data['q']
+# Keep the retry logic! It helps if the "Preview" model is busy.
+@retry(
+    stop=stop_after_attempt(3), 
+    wait=wait_exponential(multiplier=1, min=4, max=10)
+)
+def get_ai_vibe(client, quote):
+    prompt = f"Modern vibe check for a dev: '{quote}'"
     
-    # 2. Use the New Gemini Client
-    # The new SDK automatically looks for an env var named 'GOOGLE_API_KEY'
-    # but we will pass it explicitly to be safe.
-    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-    
-    prompt = f"Here is a famous quote: '{original_quote}'. Give me a 1-sentence 'vibe check' or modern explanation of this quote for a developer."
-    
-    # New method call: client.models.generate_content
+    # UPDATED MODEL NAME HERE
     response = client.models.generate_content(
-        model="gemini-1.5-flash",
+        model="gemini-3-flash-preview", 
         contents=prompt
     )
-    
-    # 3. Format and Send to Discord
-    message = (
-        f"**Daily Inspiration:**\n> {original_quote}\n\n"
-        f"**🤖 AI Vibe Check:** {response.text}"
-    )
+    return response.text
 
-    webhook_url = os.environ.get("DISCORD_WEBHOOK")
-    if webhook_url:
-        requests.post(webhook_url, json={"content": message})
-        print("✅ Success!")
-    else:
-        print(message)
+def run_task():
+    # 1. Fetch Quote
+    resp = requests.get("https://zenquotes.io/api/random")
+    quote = resp.json()[0]['q']
+    
+    # 2. Setup Client
+    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+    
+    try:
+        # 3. Get AI Insight
+        vibe = get_ai_vibe(client, quote)
+        
+        # 4. Prepare Discord Message
+        message = (
+            f"**Daily Inspiration (Gemini 3 Powered):**\n"
+            f"> {quote}\n\n"
+            f"**🤖 AI Vibe Check:** {vibe}"
+        )
+        
+        # 5. Send to Discord
+        webhook_url = os.environ.get("DISCORD_WEBHOOK")
+        if webhook_url:
+            requests.post(webhook_url, json={"content": message})
+            print("✅ Successfully sent Gemini 3 insight to Discord!")
+    except Exception as e:
+        print(f"❌ Failed: {e}")
 
 if __name__ == "__main__":
     run_task()
