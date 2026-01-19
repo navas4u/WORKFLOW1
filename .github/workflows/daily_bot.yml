@@ -23,4 +23,6 @@ jobs:
         run: pip install requests
 
       - name: Run Script
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }} # This connects the secret to your code
         run: python main.py
