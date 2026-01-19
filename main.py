@@ -1,7 +1,6 @@
 import os
 import requests
-import json
-import google.generativeai as genai
+from google import genai # New import
 
 def run_task():
     # 1. Fetch the Quote
@@ -9,23 +8,31 @@ def run_task():
     quote_data = resp.json()[0]
     original_quote = quote_data['q']
     
-    # 2. Use Gemini to "Explain" it
-    api_key = os.environ.get("GEMINI_API_KEY")
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # 2. Use the New Gemini Client
+    # The new SDK automatically looks for an env var named 'GOOGLE_API_KEY'
+    # but we will pass it explicitly to be safe.
+    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
     
     prompt = f"Here is a famous quote: '{original_quote}'. Give me a 1-sentence 'vibe check' or modern explanation of this quote for a developer."
-    ai_response = model.generate_content(prompt)
     
-    # 3. Format the Discord Message
+    # New method call: client.models.generate_content
+    response = client.models.generate_content(
+        model="gemini-2.0-flash", # Using the latest 2026 stable model
+        contents=prompt
+    )
+    
+    # 3. Format and Send to Discord
     message = (
         f"**Daily Inspiration:**\n> {original_quote}\n\n"
-        f"**🤖 AI Vibe Check:** {ai_response.text}"
+        f"**🤖 AI Vibe Check:** {response.text}"
     )
 
-    # 4. Send to Discord
     webhook_url = os.environ.get("DISCORD_WEBHOOK")
-    requests.post(webhook_url, json={"content": message})
+    if webhook_url:
+        requests.post(webhook_url, json={"content": message})
+        print("✅ Success!")
+    else:
+        print(message)
 
 if __name__ == "__main__":
     run_task()

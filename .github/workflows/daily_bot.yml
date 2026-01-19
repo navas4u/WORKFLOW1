@@ -17,13 +17,14 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.10' # Upgraded from 3.9
 
       - name: Install Dependencies
         run: pip install requests
 
       - name: Install Dependencies
-        run: pip install requests google-generativeai
+        run: |
+          pip install requests google-genai
 
       - name: Run Script
         env:
