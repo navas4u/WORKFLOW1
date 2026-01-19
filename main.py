@@ -1,29 +1,31 @@
-import requests
 import os
+import requests
 import json
+import google.generativeai as genai
 
 def run_task():
-    # 1. Fetch the data
-    response = requests.get("https://zenquotes.io/api/random")
-    if response.status_code == 200:
-        data = response.json()
-        quote = data[0]['q']
-        author = data[0]['a']
-        message = f"**Inspiration for Today:**\n> {quote}\n— *{author}*"
-        
-        # 2. Send to Discord
-        webhook_url = os.environ.get("DISCORD_WEBHOOK")
-        
-        if webhook_url:
-            payload = {"content": message}
-            headers = {"Content-Type": "application/json"}
-            requests.post(webhook_url, data=json.dumps(payload), headers=headers)
-            print("✅ Message sent to Discord!")
-        else:
-            print("❌ No Discord Webhook found. Printing to console instead:")
-            print(message)
-    else:
-        print("Failed to fetch data.")
+    # 1. Fetch the Quote
+    resp = requests.get("https://zenquotes.io/api/random")
+    quote_data = resp.json()[0]
+    original_quote = quote_data['q']
+    
+    # 2. Use Gemini to "Explain" it
+    api_key = os.environ.get("GEMINI_API_KEY")
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    prompt = f"Here is a famous quote: '{original_quote}'. Give me a 1-sentence 'vibe check' or modern explanation of this quote for a developer."
+    ai_response = model.generate_content(prompt)
+    
+    # 3. Format the Discord Message
+    message = (
+        f"**Daily Inspiration:**\n> {original_quote}\n\n"
+        f"**🤖 AI Vibe Check:** {ai_response.text}"
+    )
+
+    # 4. Send to Discord
+    webhook_url = os.environ.get("DISCORD_WEBHOOK")
+    requests.post(webhook_url, json={"content": message})
 
 if __name__ == "__main__":
     run_task()

@@ -22,7 +22,11 @@ jobs:
       - name: Install Dependencies
         run: pip install requests
 
+      - name: Install Dependencies
+        run: pip install requests google-generativeai
+
       - name: Run Script
         env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }} # This connects the secret to your code
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python main.py
