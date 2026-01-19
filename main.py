@@ -26,7 +26,12 @@ def run_task():
     
     try:
         vibe = get_ai_vibe(client, quote)
-        
+        # --- NEW: SAFETY TRUNCATION ---
+        # Discord limit is 2000. We leave room for the quote and formatting.
+        max_length = 1800 
+        if len(vibe) > max_length:
+            vibe = vibe[:max_length] + "... [Truncated]"
+        # ------------------------------
         # Check if vibe is empty
         if not vibe:
             vibe = "AI was speechless today!"
@@ -49,6 +54,6 @@ def run_task():
                 print(f"⚠️ Discord responded with {result.status_code}: {result.text}")
     except Exception as e:
         print(f"❌ Failed: {e}")
-        
+
 if __name__ == "__main__":
     run_task()
