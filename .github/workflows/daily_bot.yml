@@ -7,6 +7,9 @@ on:
     - cron: '0 0 * * *' 
   workflow_dispatch: # This adds a "Run" button in GitHub so you can test manually
 
+permissions:
+  contents: write  # This is the "Key" that unlocks the door
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -31,3 +34,11 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python main.py
+
+        - name: Commit and Push History
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          git add history.txt || echo "No changes to add"
+          git commit -m "🤖 Update quote history [skip ci]" || echo "No changes to commit"
+          git push
