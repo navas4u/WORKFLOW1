@@ -37,3 +37,13 @@ jobs:
           git add history.txt || echo "No history.txt to add"
           git commit -m "🤖 Update quote history [skip ci]" || echo "No changes to commit"
           git push
+
+        # --- NEW: FAIL-SAFE NOTIFICATION ---
+      - name: Notify Discord on Failure
+        if: failure()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d '{"content": "⚠️ **BOT ALERT:** Your Daily Quote Bot failed to run! Check the logs here: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"}' \
+          $DISCORD_WEBHOOK
