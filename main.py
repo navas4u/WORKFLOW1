@@ -10,7 +10,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 )
 def get_ai_vibe(client, quote):
     # Prompt engineering: added constraints to keep response concise
-    prompt = f"Give some examples from history (max 3 sentences) regarding this {quote}'"
+    prompt = f"Give some examples from history (max 3 sentences) regarding this in Malayalam {quote}'"
     response = client.models.generate_content(
         model="gemini-3-flash-preview", 
         contents=prompt
