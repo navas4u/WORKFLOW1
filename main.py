@@ -17,7 +17,7 @@ def run_task():
     
     # New method call: client.models.generate_content
     response = client.models.generate_content(
-        model="gemini-2.0-flash", # Using the latest 2026 stable model
+        model="gemini-1.5-flash",
         contents=prompt
     )
     
