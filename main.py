@@ -3,19 +3,24 @@ import requests
 from google import genai
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-# 1. Smart Retry Logic for the Brain (Gemini 3)
+# 1. Smart Retry Logic for Gemini 3
 @retry(
     stop=stop_after_attempt(3), 
     wait=wait_exponential(multiplier=1, min=4, max=10)
 )
 def get_ai_vibe(client, quote):
-    # Prompt engineering: added constraints to keep response concise
-    prompt = f"Give some examples from history (max 3 sentences) regarding this in Malayalam {quote}'"
+    # Prompt for Malayalam historical context
+    prompt = f"Give some examples from history (max 3 sentences) regarding this in Malayalam: '{quote}'"
+    
     response = client.models.generate_content(
         model="gemini-3-flash-preview", 
         contents=prompt
     )
-    return response.text
+    
+    # CRITICAL: Return the text if it exists, otherwise return None
+    if response and response.text:
+        return response.text
+    return None
 
 def run_task():
     # 2. Check Memory (History)
@@ -27,10 +32,10 @@ def run_task():
     with open(history_file, "r") as f:
         past_quotes = f.read().splitlines()
 
-    # 3. Fetch a Unique Quote (ZenQuotes)
+    # 3. Fetch a Unique Quote
     new_quote = ""
     author = ""
-    for _ in range(5):  # Try 5 times to find a new one
+    for _ in range(5): 
         resp = requests.get("https://zenquotes.io/api/random")
         data = resp.json()[0]
         if data['q'] not in past_quotes:
@@ -39,26 +44,32 @@ def run_task():
             break
     
     if not new_quote:
-        print("Could not find a unique quote after 5 tries. Ending.")
+        print("Could not find a unique quote after 5 tries.")
         return
 
-    # 4. Process with Gemini 3
+    # 4. Setup Gemini Client
     client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
     
     try:
+        # 5. Get AI insight with Safety Check
         vibe = get_ai_vibe(client, new_quote)
         
-        # 5. Safety Truncation for Discord (2000 char limit)
-        if len(vibe) > 1800:
-            vibe = vibe[:1800] + "... [Truncated]"
+        # If Gemini returned None or empty, use a safe fallback string
+        if not vibe:
+            vibe = "ഈ ഉദ്ധരണിയെക്കുറിച്ച് കൂടുതൽ വിവരങ്ങൾ ഇപ്പോൾ ലഭ്യമല്ല. (AI Safety Filter active)."
 
-        # 6. Save to History
+        # 6. Safety Truncation for Discord (Total length < 2000)
+        # We use 1700 to leave plenty of room for the quote and formatting
+        if len(vibe) > 1700:
+            vibe = vibe[:1700] + "... [Truncated]"
+
+        # 7. Save to History (Only if we successfully processed it)
         with open(history_file, "a") as f:
             f.write(new_quote + "\n")
 
-        # 7. Prepare and Send to Discord
+        # 8. Send to Discord
         payload = {
-            "content": f"**Daily Inspiration:**\n> {new_quote}\n— *{author}*\n\n**🤖 AI Vibe Check:** {vibe}",
+            "content": f"**Daily Inspiration:**\n> {new_quote}\n— *{author}*\n\n**🤖 AI Vibe Check (Malayalam):**\n{vibe}",
             "username": "Gemini 3 Bot"
         }
         
@@ -67,7 +78,7 @@ def run_task():
             result = requests.post(webhook_url, json=payload)
             print(f"Discord Response Code: {result.status_code}")
             if result.status_code == 204:
-                print("✅ Successfully sent to Discord and updated history.")
+                print("✅ Success! History updated and message sent.")
             else:
                 print(f"⚠️ Discord Error: {result.text}")
                 
