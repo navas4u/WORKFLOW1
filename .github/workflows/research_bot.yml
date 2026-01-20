@@ -1,0 +1,35 @@
+name: Business Research Agent
+
+on:
+  schedule:
+    # Runs every Wednesday at 7:00 AM UTC (10:00 AM Qatar)
+    - cron: '0 7 * * 3' 
+  workflow_dispatch:      # Allows manual testing
+
+permissions:
+  contents: write
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./research_agent
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: pip install requests google-genai
+
+      - name: Run Research Agent
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python main.py
