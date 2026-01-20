@@ -2,6 +2,15 @@ import os
 import requests
 from google import genai
 from google.genai import types
+from tenacity import retry, stop_after_attempt, wait_exponential
+import google.genai.errors
+
+# Add this decorator to handle the 429 error gracefully
+@retry(
+    stop=stop_after_attempt(5), 
+    wait=wait_exponential(multiplier=2, min=10, max=60),
+    retry=lambda e: isinstance(e, google.genai.errors.ClientError) and "429" in str(e)
+)
 
 def get_business_research():
     client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
