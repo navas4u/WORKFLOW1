@@ -2,7 +2,7 @@ name: Daily Quote Bot
 
 on:
   schedule:
-    - cron: '20 09 * * *'  # Runs at 9:00 AM UTC daily
+    - cron: '20 06 * * *'  # Runs at 9:00 AM UTC daily
   workflow_dispatch:      # Allows you to run it manually for testing
 
 permissions:
