@@ -18,9 +18,8 @@ def get_business_research():
 
     prompt = "Research the top 3 latest AI technology initiatives or startups in Qatar for 2026. Provide a 1-sentence summary for each."
 
-    # CHANGED: Switched to gemini-2.0-flash for better quota stability
     response = client.models.generate_content(
-        model="gemini-2.0-flash",
+        model="gemini-3-flash-preview",
         contents=prompt,
         config=types.GenerateContentConfig(
             tools=[search_tool]
